@@ -1,0 +1,68 @@
+"""
+ReadableLog.ipy:
+Converts the logs out of a spyc session into a more readable text file.
+Takes the _all_XXX.log file out of a spyc session.
+Returns a _rall_XXX.log file, without deleting the original file.
+
+python ReadableLog.ipy filename.log
+python ReadableLog.ipy *
+"""
+
+import os as os
+import numpy as np
+from pylab import genfromtxt
+import sys
+
+
+if __name__=="__main__":
+
+    pathToFileList = sys.argv[1:]
+
+    #loop over all the files given as arguments
+    for item in pathToFileList:
+
+        #avoid reconversion of files already converted
+        if (item[0:2] == '_r') or (item == 'ReadableLog.ipy'):
+            pass
+
+        else:
+            pathToFile = item
+
+
+            #Define the elements to be removed of the original log file
+            remove_elem_0 = ['#', ']', '\n']
+            remove_elem = [
+                          'DevError', 'desc =', 'origin =', 'reason =', 'severity =',
+                          'connection'
+                           ]
+
+            try:
+                with open(pathToFile, 'r') as f:
+                    log_lines = f.readlines()
+
+            except:
+                sys.exit('Wrong filename!')
+
+            rlog_lines = np.empty([], dtype ='<U1000')
+
+            for i in range(len(log_lines)):
+                if 'Scan Index' in log_lines[i]:
+                    scan_number = ''.join(filter(str.isdigit, log_lines[i]))
+                    rlog_lines[-1] = '#'+scan_number + ' ' + rlog_lines[-1]
+                elif '*** ABORT ***' in log_lines[i]:
+                    rlog_lines = np.append(rlog_lines, '*** ABORT ***'+'\n')
+                elif 'Scan aborted' in log_lines[i]:
+                    rlog_lines = np.append(rlog_lines, '*** SCAN ABORTED ***'+'\n')
+                elif log_lines[i][0] in remove_elem_0:
+                    pass
+                elif any([elem in log_lines[i] for elem in remove_elem]):
+                    pass
+                else:
+                    rlog_lines = np.append(rlog_lines, log_lines[i])
+
+            file = open('_r'+pathToFile[1:],'w')
+            for k in range(len(rlog_lines)):
+                file.write(rlog_lines[k])
+            file.close()
+            print('_r'+pathToFile[1:]+' : done!')
+
